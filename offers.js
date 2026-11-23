@@ -51,6 +51,10 @@ export function rankOffers(offers, productId, now = Date.now()) {
       || first.price - second.price);
 }
 
+export function bestComparableOffer(ranked) {
+  return ranked.find(offer => offer.availability === 'in_stock' && offer.total !== null);
+}
+
 export async function loadOffers() {
   try {
     const response = await fetch(new URL('./offers.json', import.meta.url), {

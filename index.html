@@ -32,6 +32,9 @@
 
     <aside class="notice"><span aria-hidden="true">ⓘ</span><p><strong>Prix marchands</strong> — <span id="source-note">Aucun prix marchand n’est disponible actuellement. Vous pouvez toujours parcourir le catalogue.</span></p></aside>
 
+    <div id="price-alert-status" class="alert-status" role="status"></div>
+    <div id="price-alert-notifications" class="alert-notifications" role="status"></div>
+
     <section class="catalog" id="catalog" aria-labelledby="catalog-title">
       <div class="section-title"><h2 id="catalog-title" tabindex="-1">Explorer les produits</h2><p id="count" role="status"></p></div>
       <div class="filters" role="group" aria-label="Catégories">
@@ -61,6 +64,23 @@
     <div id="offers"></div>
   </dialog>
 
+  <dialog id="price-alert-dialog" aria-labelledby="price-alert-title" aria-describedby="price-alert-help">
+    <div class="dialog-head">
+      <h2 id="price-alert-title"></h2>
+      <button id="close-price-alert" type="button" class="close" aria-label="Fermer l’alerte de prix">×</button>
+    </div>
+    <p id="price-alert-help">Vous serez averti ici si une offre en stock atteint votre seuil, livraison comprise. L’alerte est enregistrée dans ce navigateur.</p>
+    <form id="price-alert-form" novalidate>
+      <label for="price-alert-threshold">Prix maximum en euros</label>
+      <input id="price-alert-threshold" type="text" inputmode="decimal" autocomplete="off" required autofocus>
+      <p id="price-alert-error" role="alert"></p>
+      <div class="alert-actions">
+        <button type="submit">Enregistrer l’alerte</button>
+        <button type="button" id="delete-price-alert" hidden>Supprimer l’alerte</button>
+      </div>
+    </form>
+  </dialog>
+
   <template id="product-template">
     <article class="card">
       <div class="product-image" aria-hidden="true"></div>
@@ -75,6 +95,7 @@
           <a class="best-link" hidden>Voir l’offre</a>
         </div>
         <button class="compare" type="button"><span></span><span aria-hidden="true">→</span></button>
+        <button class="alert-button" type="button">Créer une alerte</button>
       </div>
     </article>
   </template>

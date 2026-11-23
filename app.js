@@ -1,9 +1,11 @@
 import { searchProducts } from './catalog.js';
-import { availability, loadOffers, merchants, rankOffers } from './offers.js';
+import { availability, bestComparableOffer, loadOffers, merchants, rankOffers } from './offers.js';
+import { setupPriceAlerts } from './price-alerts.js';
 
 const euros = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
 const money = cents => euros.format(cents / 100);
 const date = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Paris' });
+const priceAlerts = setupPriceAlerts(money);
 const unavailable = 'Prix indisponible';
 
 const search = document.querySelector('#search');
@@ -75,7 +77,7 @@ function render() {
   const now = Date.now();
   const matches = searchProducts(search.value, category).map(product => {
     const ranked = rankOffers(offers, product.id, now);
-    const best = ranked.find(offer => offer.availability === 'in_stock' && offer.total !== null);
+    const best = bestComparableOffer(ranked);
     return { product, ranked, best };
   }).sort((first, second) => {
     const firstTotal = first.best?.total ?? Number.MAX_SAFE_INTEGER;
@@ -119,6 +121,7 @@ function render() {
     button.firstElementChild.textContent = label;
     button.setAttribute('aria-label', `${label} pour ${product.brand} ${product.model}`);
     button.addEventListener('click', () => showComparison(product));
+    priceAlerts.bindButton(card.querySelector('.alert-button'), product);
     catalog.append(card);
   }
 }
@@ -143,21 +146,40 @@ document.querySelector('#reset').addEventListener('click', () => {
 });
 document.querySelector('#close').addEventListener('click', () => comparison.close());
 render();
-loadOffers().then(loaded => {
-  offers = loaded;
-  if (!offers.length) return;
+let expiryTimer;
+let refreshing = false;
+const refreshInterval = 5 * 60 * 1000;
+
+function updatePrices() {
+  const now = Date.now();
   render();
   if (comparison.open) renderComparison(selectedProduct);
-  scheduleExpiry();
-});
-
-function scheduleExpiry() {
-  const now = Date.now();
+  priceAlerts.updateOffers(offers);
+  clearTimeout(expiryTimer);
   const next = Math.min(...offers.filter(offer => offer.expires > now).map(offer => offer.expires));
-  if (!Number.isFinite(next)) return;
-  setTimeout(() => {
-    render();
-    if (comparison.open) renderComparison(selectedProduct);
-    scheduleExpiry();
-  }, Math.min(next - now, 2_147_483_647));
+  if (Number.isFinite(next)) {
+    expiryTimer = setTimeout(updatePrices, Math.min(Math.max(0, next - Date.now()), 2_147_483_647));
+  }
 }
+
+async function refreshPrices() {
+  if (refreshing) return;
+  refreshing = true;
+  try {
+    const loaded = await loadOffers();
+    if (JSON.stringify(loaded) !== JSON.stringify(offers)) {
+      offers = loaded;
+      updatePrices();
+    }
+  } finally {
+    refreshing = false;
+  }
+}
+
+refreshPrices();
+setInterval(() => {
+  if (!document.hidden) refreshPrices();
+}, refreshInterval);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) refreshPrices();
+});
