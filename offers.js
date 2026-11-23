@@ -47,12 +47,8 @@ export function readOffers(feed, now = Date.now()) {
 
 export function rankOffers(offers, productId, now = Date.now()) {
   return offers.filter(offer => offer.productId === productId && offer.expires > now)
-    .sort((first, second) => {
-      const byStock = Number(second.availability === 'in_stock')
-        - Number(first.availability === 'in_stock');
-      return byStock || (first.total ?? Infinity) - (second.total ?? Infinity)
-        || first.price - second.price;
-    });
+    .sort((first, second) => (first.total ?? Infinity) - (second.total ?? Infinity)
+      || first.price - second.price);
 }
 
 export async function loadOffers() {

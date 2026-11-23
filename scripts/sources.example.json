@@ -1,0 +1,32 @@
+{
+  "sources": [
+    {
+      "merchant": "Fnac",
+      "label": "Nom public du flux partenaire",
+      "url_env": "FNAC_FEED_URL",
+      "token_env": "FNAC_API_TOKEN",
+      "format": "json",
+      "rows_path": "offers",
+      "amount_unit": "cents",
+      "valid_hours": 6,
+      "new_value": "new",
+      "purchase_hosts": ["www.fnac.com"],
+      "fields": {
+        "reference": "ean",
+        "currency": "currency",
+        "condition": "condition",
+        "price": "priceCents",
+        "shipping": "shippingCents",
+        "availability": "availability",
+        "url": "purchaseUrl",
+        "observed_at": "updatedAt"
+      },
+      "stock_values": {
+        "in_stock": "in_stock",
+        "out_of_stock": "out_of_stock",
+        "preorder": "preorder"
+      },
+      "product_map": {}
+    }
+  ]
+}
