@@ -71,6 +71,8 @@ h3 { margin: 0; font-size: 21px; letter-spacing: -.035em; }
 .price { margin-top: auto; padding: 12px 0; border-top: 1px solid var(--line); }
 .price span { display: block; color: var(--muted); font-size: 11px; }
 .price strong { display: block; margin-top: 3px; font-size: 25px; letter-spacing: -.04em; }
+.best-merchant { margin: 4px 0; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.best-link { color: var(--accent-dark); font-weight: 750; font-size: 13px; }
 .compare { display: flex; justify-content: space-between; gap: 6px; align-items: center; width: 100%; padding: 9px 11px; border: 1px solid #e5d8fc; border-radius: 8px; color: var(--accent-dark); background: #f4edff; font-size: 13px; font-weight: 800; }
 .compare:hover { background: #eadeff; }
 .empty { text-align: center; padding: 34px 12px; border: 1px dashed #d4c3eb; border-radius: 15px; }

@@ -1,0 +1,88 @@
+{
+  "sources": [
+    {
+      "merchant": "Fnac",
+      "label": "Flux produits AWIN",
+      "url_env": "AWIN_FNAC_FR_FEED_URL",
+      "format": "csv",
+      "delimiter": ",",
+      "amount_unit": "euros",
+      "valid_hours": 6,
+      "new_value": "new",
+      "purchase_hosts": [
+        "www.fnac.com"
+      ],
+      "fields": {
+        "reference": "ean",
+        "currency": "currency",
+        "condition": "condition",
+        "price": "search_price",
+        "shipping": "delivery_cost",
+        "availability": "in_stock",
+        "url": "merchant_deep_link",
+        "observed_at": "last_updated"
+      },
+      "stock_values": {
+        "1": "in_stock",
+        "0": "out_of_stock"
+      },
+      "product_map": {}
+    },
+    {
+      "merchant": "Fnac Pro",
+      "label": "Flux produits AWIN",
+      "url_env": "AWIN_FNAC_PRO_FR_FEED_URL",
+      "format": "csv",
+      "delimiter": ",",
+      "amount_unit": "euros",
+      "valid_hours": 6,
+      "new_value": "new",
+      "purchase_hosts": [
+        "www.fnacpro.com"
+      ],
+      "fields": {
+        "reference": "ean",
+        "currency": "currency",
+        "condition": "condition",
+        "price": "search_price",
+        "shipping": "delivery_cost",
+        "availability": "in_stock",
+        "url": "merchant_deep_link",
+        "observed_at": "last_updated"
+      },
+      "stock_values": {
+        "1": "in_stock",
+        "0": "out_of_stock"
+      },
+      "product_map": {}
+    },
+    {
+      "merchant": "Samsung Pro",
+      "label": "Flux produits AWIN",
+      "url_env": "AWIN_SAMSUNG_PRO_FR_FEED_URL",
+      "format": "csv",
+      "delimiter": ",",
+      "amount_unit": "euros",
+      "valid_hours": 6,
+      "new_value": "new",
+      "purchase_hosts": [
+        "www.samsung.com"
+      ],
+      "fields": {
+        "reference": "ean",
+        "currency": "currency",
+        "condition": "condition",
+        "price": "search_price",
+        "shipping": "delivery_cost",
+        "availability": "in_stock",
+        "url": "merchant_deep_link",
+        "observed_at": "last_updated"
+      },
+      "stock_values": {
+        "1": "in_stock",
+        "0": "out_of_stock"
+      },
+      "product_map": {}
+    }
+  ]
+}

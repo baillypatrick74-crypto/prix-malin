@@ -2,6 +2,8 @@
 
 Comparateur high-tech en français, utilisable sur smartphone et ordinateur. Recherchez une marque ou un modèle, par exemple Samsung Galaxy S24, Apple iPhone 16 ou Xiaomi Redmi Note 14 5G. Le catalogue est une sélection de références et de variantes, définie dans `catalog.js`.
 
+La fiche produit met en avant le total TTC le plus bas parmi les offres en stock dont la livraison est connue. Elle indique le marchand et donne accès à son offre. Les offres dont la livraison ou le stock est inconnu restent consultables dans le comparatif.
+
 ## Lancer le site
 
 Depuis la racine du dépôt, avec Python 3 :
@@ -77,3 +79,15 @@ Format du fichier : un objet JSON avec `version: 1` et un tableau `offers`. Chaq
 Normalisez toutes les offres sur le même périmètre de livraison pour permettre la comparaison. Renouvelez le fichier selon la cadence et les conditions de vos sources. Une offre expirée ou invalide est écartée. Lorsque la livraison est inconnue, le site affiche le prix de l’article et laisse le total indisponible. La recherche fonctionne même si le fichier est absent ou inaccessible.
 
 Aucun accès marchand n’est configuré dans le dépôt. Le site trie les totaux connus par ordre croissant et place les offres aux frais de livraison inconnus après ces totaux. Le stock est affiché séparément.
+
+## Flux produits AWIN
+
+Attendez l’acceptation d’un programme dans votre compte éditeur. Dans l’espace éditeur AWIN, ouvrez **Flux produits / Create-a-Feed**, sélectionnez le programme et récupérez l’URL de téléchargement HTTPS du flux qui vous est accordé. Vérifiez auprès du programme les droits d’affichage public, la cadence et la durée de validité des données. La disponibilité d’un flux dépend du programme.
+
+1. Dans **Settings → Environments → merchant-feeds → Environment secrets**, ajoutez l’URL complète comme secret. Utilisez `AWIN_FNAC_FR_FEED_URL`, `AWIN_FNAC_PRO_FR_FEED_URL` ou `AWIN_SAMSUNG_PRO_FR_FEED_URL`, selon le programme accepté. L’URL générée peut contenir un identifiant éditeur et une clé de téléchargement. Gardez-la intégralement dans le secret.
+2. Dans la variable d’environnement GitHub `MERCHANT_SOURCES_JSON`, reprenez uniquement les entrées acceptées de [l’exemple AWIN](scripts/sources.awin.example.json). Si d’autres sources existent déjà, ajoutez les entrées AWIN au même tableau `sources`. L’exemple est un modèle à adapter au fichier reçu, notamment pour le séparateur, les en-têtes, le format de la date, la devise et les valeurs de stock et d’état. Les exports CSV UTF-8, compressés en gzip ou en clair, sont pris en charge dans la limite de 32 Mio par téléchargement et 256 Mio après décompression.
+3. Associez les EAN/GTIN ou références exactes aux identifiants existants de [catalog.js](catalog.js) dans `product_map`. Confirmez que les prix des programmes Pro sont publics et **TTC** avant d’activer ces sources. Utilisez un prix TTC fourni par le flux, y compris pour les frais de livraison. Une livraison non renseignée reste inconnue. Pour une date ISO dépourvue de fuseau, renseignez `timestamp_timezone` uniquement si AWIN ou le marchand documente ce fuseau.
+4. Choisissez la colonne du lien marchand direct (`merchant_deep_link` dans l’exemple) et vérifiez les hôtes exacts de `purchase_hosts` dans le flux reçu. Le modèle AWIN utilise les liens marchands directs pour garder les identifiants éditeur hors des URLs publiques. Vérifiez que ce mode de publication est permis par le programme. Les URL privées du flux et les lignes sources restent côté import.
+5. Lancez le workflow sur `main` après fusion. Contrôlez le nombre d’offres valides par source puis vérifiez une variante sur GitHub Pages. Pour activer l’actualisation automatique toutes les six heures, définissez la variable de dépôt `PRIX_MALIN_AUTO_REFRESH` à `true` si la cadence est autorisée. Le catalogue continue d’afficher ses huit produits avec « Prix indisponible » pour les variantes sans offre valide.
+
+Si AWIN livre un flux plus volumineux ou avec un format différent, demandez un export filtré couvrant les références du catalogue, ou préparez un export compatible hors de GitHub Pages.
