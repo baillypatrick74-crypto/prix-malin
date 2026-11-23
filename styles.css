@@ -105,8 +105,13 @@ dialog::backdrop { background: #21163388; }
   .hero-copy { padding: 28px 16px 12px; }
   .hero-art { min-height: 175px; background-size: contain; background-repeat: no-repeat; }
   .intro { margin: 14px 0 16px; }
-  .search input { font-size: 16px; }
+  .search input { min-height: 44px; font-size: 16px; }
   .search button { padding-inline: 9px; }
+  .search button, .filters button, .compare, .close { min-height: 44px; }
+  .close { min-width: 44px; }
+  .best-link:not([hidden]), .offer-actions a { display: inline-flex; align-items: center; min-height: 44px; }
+  .card h3 { font-size: 19px; overflow-wrap: anywhere; }
+  .price strong { font-size: 21px; }
   .notice { margin-bottom: 25px; }
   .grid { gap: 9px; }
   .card-content { padding: 10px; }
