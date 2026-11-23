@@ -72,12 +72,21 @@ function showComparison(product) {
 }
 
 function render() {
-  const matches = searchProducts(search.value, category);
-  const hasOffers = offers.some(offer => offer.expires > Date.now());
+  const now = Date.now();
+  const matches = searchProducts(search.value, category).map(product => {
+    const ranked = rankOffers(offers, product.id, now);
+    const best = ranked.find(offer => offer.availability === 'in_stock' && offer.total !== null);
+    return { product, ranked, best };
+  }).sort((first, second) => {
+    const firstTotal = first.best?.total ?? Number.MAX_SAFE_INTEGER;
+    const secondTotal = second.best?.total ?? Number.MAX_SAFE_INTEGER;
+    return firstTotal - secondTotal;
+  });
+  const hasOffers = offers.some(offer => offer.expires > now);
   document.querySelector('#source-status').textContent = hasOffers ? 'Offres marchandes' : unavailable;
   document.querySelector('#source-note').textContent = hasOffers
     ? 'Les prix et stocks sont ceux du dernier relevé valide. Vérifiez les conditions de livraison chez le marchand.'
-    : 'Aucune offre récente issue d’une source autorisée n’est disponible actuellement.';
+    : 'Aucun prix marchand n’est disponible actuellement. Vous pouvez toujours parcourir le catalogue.';
 
   for (const filter of filters) {
     filter.setAttribute('aria-pressed', String(category === filter.dataset.category));
@@ -86,15 +95,13 @@ function render() {
   catalog.replaceChildren();
   empty.hidden = matches.length !== 0;
   count.textContent = `${matches.length} produit${matches.length === 1 ? '' : 's'}`;
-  for (const product of matches) {
+  for (const { product, ranked, best } of matches) {
     const card = template.content.cloneNode(true);
     const picture = card.querySelector('.product-image');
     picture.classList.add(product.image);
     card.querySelector('.category').textContent = product.category;
     card.querySelector('h3').textContent = `${product.brand} ${product.model}`;
     card.querySelector('.specs').textContent = product.specs;
-    const ranked = rankOffers(offers, product.id);
-    const best = ranked.find(offer => offer.availability === 'in_stock' && offer.total !== null);
     card.querySelector('.price span').textContent = best ? 'Meilleur total · livraison incluse' : 'Offres marchandes';
     card.querySelector('.price strong').textContent = best ? money(best.total)
       : ranked.length ? 'Voir les prix' : unavailable;

@@ -11,11 +11,15 @@ export const products = [
 
 const normalize = value => value.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 
+const compact = value => normalize(value).replace(/[^\p{L}\p{N}]+/gu, '');
+
 export function searchProducts(query, category) {
   const terms = normalize(query).split(/[^\p{L}\p{N}]+/u).filter(Boolean);
   return products.filter(product => {
-    const searchable = normalize(`${product.brand} ${product.model} ${product.category} ${product.specs}`);
+    const categoryAlias = product.category === 'PC portables' ? 'ordinateur' : '';
+    const searchable = normalize(`${product.brand} ${product.model} ${product.category} ${product.specs} ${categoryAlias}`);
+    const model = compact(product.model);
     return (!category || product.category === category)
-      && terms.every(term => searchable.includes(term));
+      && terms.every(term => searchable.includes(term) || model.includes(term));
   });
 }
