@@ -123,3 +123,35 @@ dialog::backdrop { background: #21163388; }
 .offer { flex-wrap: wrap; overflow-wrap: anywhere; }
 .offer-actions { display: grid; gap: 4px; justify-items: start; }
 .offer-actions a { color: var(--accent-dark); font-weight: 750; padding-block: 5px; }
+
+.alert-button, .alert-actions button {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid #e5d8fc;
+  border-radius: 8px;
+  background: white;
+  color: var(--accent-dark);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.alert-button { margin-top: 8px; }
+.alert-button:hover, .alert-actions button:hover { background: #f4edff; }
+.alert-status:not(:empty) { margin-bottom: 12px; color: var(--accent-dark); }
+.alert-notifications p { padding: 12px 15px; border: 1px solid #e5d8fc; border-radius: 9px; background: #f7f2ff; }
+.alert-notifications a { color: var(--accent-dark); font-weight: 750; }
+#price-alert-title { overflow-wrap: anywhere; }
+#price-alert-help { color: var(--muted); line-height: 1.45; }
+#price-alert-form label { display: block; font-weight: 750; }
+#price-alert-threshold {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px solid #a594bd;
+  border-radius: 8px;
+  font-size: 16px;
+}
+#price-alert-error { color: #a3273e; }
+.alert-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.alert-actions button[type="submit"] { background: var(--accent-dark); color: white; }

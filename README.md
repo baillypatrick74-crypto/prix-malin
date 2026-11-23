@@ -93,3 +93,11 @@ Attendez l’acceptation d’un programme dans votre compte éditeur. Dans l’e
 5. Lancez le workflow sur `main` après fusion. Contrôlez le nombre d’offres valides par source puis vérifiez une variante sur GitHub Pages. Pour activer l’actualisation automatique toutes les six heures, définissez la variable de dépôt `PRIX_MALIN_AUTO_REFRESH` à `true` si la cadence est autorisée. Le catalogue continue d’afficher ses huit produits avec « Prix indisponible » pour les variantes sans offre valide.
 
 Si AWIN livre un flux plus volumineux ou avec un format différent, demandez un export filtré couvrant les références du catalogue, ou préparez un export compatible hors de GitHub Pages.
+
+## Alertes de prix
+
+Créez une alerte depuis l’une des huit fiches et entrez un prix maximum en euros. La comparaison utilise le meilleur total d’une offre en stock et encore valide, livraison comprise. Une offre à un total égal ou inférieur au seuil s’affiche dans les notifications du site. Vous pouvez modifier ou supprimer le seuil depuis la fiche.
+
+Le seuil reste dans le stockage local du navigateur. Le site recharge le flux à l’ouverture, au retour sur l’onglet et toutes les cinq minutes tant que l’onglet est visible. Une offre expirée cesse de déclencher l’alerte. Le site ne vérifie les alertes que lorsqu’il est ouvert.
+
+Pour une évolution vers l’e-mail, la règle de comparaison est isolée dans `matchingPriceAlerts`. Un futur service côté serveur devra gérer le consentement, la vérification des adresses, le désabonnement et la déduplication des envois. La version actuelle ne collecte aucune adresse et n’envoie aucun e-mail.

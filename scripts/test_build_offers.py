@@ -116,7 +116,7 @@ class ImportTests(unittest.TestCase):
             build(output, {"version": 1, "offers": []})
             actual = {path.relative_to(output).as_posix() for path in output.rglob("*") if path.is_file()}
             self.assertEqual(actual, {
-                "app.js", "catalog.js", "offers.js", "index.html", "styles.css",
+                "app.js", "catalog.js", "offers.js", "price-alerts.js", "index.html", "styles.css",
                 "offers.json", "assets/hero.webp", "assets/products.webp",
             })
             self.assertEqual(json.loads((output / "offers.json").read_text())["offers"], [])
