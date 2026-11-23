@@ -155,3 +155,5 @@ dialog::backdrop { background: #21163388; }
 #price-alert-error { color: #a3273e; }
 .alert-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .alert-actions button[type="submit"] { background: var(--accent-dark); color: white; }
+
+#offers-refreshed-at:not([hidden]) { display: block; margin-top: 4px; }

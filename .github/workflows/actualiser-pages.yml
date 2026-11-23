@@ -3,7 +3,7 @@ name: Actualiser les offres et publier PRIX MALIN
 on:
   workflow_dispatch:
   schedule:
-    - cron: '17 */6 * * *'
+    - cron: '17 5 * * *'
 
 permissions: {}
 

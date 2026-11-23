@@ -26,6 +26,17 @@ MAX_CENTS = (2**53 - 1) // 2
 STOCK_STATES = {"in_stock", "out_of_stock", "preorder", "unknown"}
 
 
+AWIN_SOURCES = {
+    "AWIN_FNAC_FR_FEED_URL": "AWIN FNAC FR",
+    "AWIN_FNAC_PRO_FR_FEED_URL": "AWIN FNAC PRO FR",
+    "AWIN_SAMSUNG_PRO_FR_FEED_URL": "AWIN Samsung Pro FR",
+}
+
+
+class AccessMissing(ValueError):
+    pass
+
+
 class NoRedirects(HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         return None
@@ -39,16 +50,18 @@ def https_url(value):
 
 
 def fetch(source):
-    endpoint = os.environ[source["url_env"]]
+    endpoint = os.environ.get(source["url_env"], "").strip()
+    if not endpoint:
+        raise AccessMissing("URL du flux absente.")
     https_url(endpoint)
     headers = {"Accept": "application/json, text/csv, application/gzip"}
-    token = os.environ[source["token_env"]] if source.get("token_env") else ""
+    token = os.environ.get(source["token_env"], "") if source.get("token_env") else ""
     if token:
         header = source.get("token_header", "Authorization")
         prefix = source.get("token_prefix", "Bearer ")
         headers[header] = prefix + token
     elif source.get("token_env"):
-        raise ValueError("Clé API absente")
+        raise AccessMissing("Clé API absente.")
     with build_opener(NoRedirects()).open(Request(endpoint, headers=headers), timeout=20) as response:
         body = response.read(MAX_DOWNLOAD_BYTES + 1)
     if len(body) > MAX_DOWNLOAD_BYTES:
@@ -159,24 +172,47 @@ def normalize(row, source, token, now):
     }
 
 
-def collect(config):
+def collect(config, reports=None):
     offers = []
+    diagnostics = []
+    configured_awin = set()
     for index, source in enumerate(config["sources"], 1):
+        label = f"Source {index}"
         try:
+            url_env = source["url_env"]
+            if isinstance(url_env, str) and url_env in AWIN_SOURCES:
+                label = AWIN_SOURCES[url_env]
+                configured_awin.add(url_env)
             if source.get("amount_unit", "cents") not in {"cents", "euros"} or source["valid_hours"] <= 0:
                 raise ValueError("Configuration de normalisation invalide")
             body, token = fetch(source)
             now = datetime.now(timezone.utc)
             rows = source_rows(body, source)
             normalized = [offer for row in rows if (offer := normalize(row, source, token, now))]
+        except AccessMissing as error:
+            result = str(error)
         except HTTPError as error:
-            print(f"Source {index} indisponible (HTTP {error.code}).", file=sys.stderr)
-        except (URLError, OSError, ValueError, TypeError, KeyError, AttributeError, csv.Error, OverflowError, EOFError, zlib.error):
-            print(f"Source {index} ignorée : accès, format ou configuration invalide.", file=sys.stderr)
+            result = f"Flux inaccessible (HTTP {error.code})."
+        except (URLError, TimeoutError, ConnectionError):
+            result = "Flux inaccessible. Vérifiez la connexion et l’accès marchand."
+        except (OSError, ValueError, TypeError, KeyError, AttributeError, csv.Error, OverflowError, EOFError, zlib.error):
+            result = "Format ou configuration du flux invalide."
         else:
             offers.extend(normalized)
-            print(f"Source {index} : {len(normalized)} offre(s) valide(s).")
-    return {"version": 1, "offers": offers}
+            result = f"{len(normalized)} offre(s) valide(s)."
+            if not normalized:
+                result += " Vérifiez les références, les champs et les dates de validité."
+        diagnostics.append(f"{label} : {result}")
+
+    for key, label in AWIN_SOURCES.items():
+        if key not in configured_awin:
+            diagnostics.append(f"{label} : aucune source déclarée dans MERCHANT_SOURCES_JSON.")
+    for line in diagnostics:
+        print(line)
+    if reports is not None:
+        reports.extend(diagnostics)
+    refreshed_at = datetime.now(timezone.utc).isoformat()
+    return {"version": 1, "refreshedAt": refreshed_at, "offers": offers}
 
 
 def build(output, data):
@@ -214,7 +250,13 @@ def main():
             raise ValueError("sources doit être un tableau")
     except (OSError, ValueError, AttributeError):
         parser.error("Configuration illisible ou invalide.")
-    build(output, collect(config))
+    reports = []
+    build(output, collect(config, reports))
+    if summary := os.environ.get("GITHUB_STEP_SUMMARY"):
+        with open(summary, "a", encoding="utf-8") as file:
+            file.write("## Diagnostic des flux marchands\n\n")
+            for line in reports:
+                file.write(f"- {line}\n")
 
 
 if __name__ == "__main__":

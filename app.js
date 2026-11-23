@@ -19,6 +19,7 @@ const offerList = document.querySelector('#offers');
 let category = '';
 
 let offers = [];
+let refreshedAt = null;
 let selectedProduct = null;
 
 function offerRow(merchant, offer) {
@@ -85,6 +86,12 @@ function render() {
     return firstTotal - secondTotal;
   });
   const hasOffers = offers.some(offer => offer.expires > now);
+  const refreshDate = document.querySelector('#offers-refreshed-at');
+  refreshDate.hidden = refreshedAt === null;
+  if (refreshedAt !== null) {
+    refreshDate.dateTime = new Date(refreshedAt).toISOString();
+    refreshDate.textContent = `Dernière actualisation des offres : ${date.format(refreshedAt)} (Paris)`;
+  }
   document.querySelector('#source-status').textContent = hasOffers ? 'Offres marchandes' : unavailable;
   document.querySelector('#source-note').textContent = hasOffers
     ? 'Les prix et stocks sont ceux du dernier relevé valide. Vérifiez les conditions de livraison chez le marchand.'
@@ -167,8 +174,9 @@ async function refreshPrices() {
   refreshing = true;
   try {
     const loaded = await loadOffers();
-    if (JSON.stringify(loaded) !== JSON.stringify(offers)) {
-      offers = loaded;
+    if (loaded && (loaded.refreshedAt !== refreshedAt || JSON.stringify(loaded.offers) !== JSON.stringify(offers))) {
+      offers = loaded.offers;
+      refreshedAt = loaded.refreshedAt;
       updatePrices();
     }
   } finally {

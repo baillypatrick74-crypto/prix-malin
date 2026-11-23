@@ -42,17 +42,20 @@ export function setupPriceAlerts(money) {
   let offers = [];
   let selected;
   let previousMatches = '';
+  const lastTotals = new Map();
+  const lowered = new Set();
 
   function updateNotifications() {
     const matches = matchingPriceAlerts(alerts, offers, Date.now());
     const signature = JSON.stringify(matches.map(({ product, threshold, best }) =>
-      [product.id, threshold, best.merchant, best.total, best.url]));
+      [product.id, threshold, best.merchant, best.total, best.url, lowered.has(product.id)]));
     if (signature === previousMatches) return;
     previousMatches = signature;
     notifications.replaceChildren();
     for (const { product, threshold, best } of matches) {
       const item = document.createElement('p');
-      item.textContent = `Seuil atteint pour ${product.brand} ${product.model} : ${money(best.total)} chez ${best.merchant}, livraison incluse (seuil : ${money(threshold)}). `;
+      const reason = lowered.has(product.id) ? 'Baisse de prix · seuil atteint' : 'Seuil atteint';
+      item.textContent = `${reason} pour ${product.brand} ${product.model} : ${money(best.total)} chez ${best.merchant}, livraison incluse (seuil : ${money(threshold)}). `;
       const link = document.createElement('a');
       link.href = best.url;
       link.textContent = 'Voir l’offre';
@@ -125,6 +128,17 @@ export function setupPriceAlerts(money) {
       });
     },
     updateOffers(next) {
+      const now = Date.now();
+      for (const product of products) {
+        const best = bestComparableOffer(rankOffers(next, product.id, now));
+        if (!best) continue;
+        const previous = lastTotals.get(product.id);
+        if (previous !== undefined && best.total !== previous) {
+          if (best.total < previous) lowered.add(product.id);
+          else lowered.delete(product.id);
+        }
+        lastTotals.set(product.id, best.total);
+      }
       offers = next;
       updateNotifications();
     },
