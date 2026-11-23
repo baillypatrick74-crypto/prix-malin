@@ -12,8 +12,35 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  eligibility:
+    name: Vérifier le déclenchement de la publication
+    runs-on: ubuntu-24.04
+    outputs:
+      publish: ${{ steps.check.outputs.publish }}
+    steps:
+      - name: Indiquer si la publication est autorisée
+        id: check
+        env:
+          AUTO_REFRESH: ${{ vars.PRIX_MALIN_AUTO_REFRESH }}
+        run: |
+          publish=false
+          if [[ "$GITHUB_REF" != 'refs/heads/main' ]]; then
+            reason='Publication ignorée. Lancez le workflow sur la branche main.'
+          elif [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
+            publish=true
+            reason='Publication manuelle autorisée sur main, avec ou sans flux marchand.'
+          elif [[ "$GITHUB_EVENT_NAME" == 'schedule' && "${AUTO_REFRESH,,}" == 'true' ]]; then
+            publish=true
+            reason='Actualisation planifiée autorisée sur main.'
+          else
+            reason='Actualisation planifiée désactivée. Définissez la variable de dépôt PRIX_MALIN_AUTO_REFRESH à true pour l’activer.'
+          fi
+          printf 'publish=%s\n' "$publish" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "$reason" | tee -a "$GITHUB_STEP_SUMMARY"
+
   build:
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || vars.PRIX_MALIN_AUTO_REFRESH == 'true')
+    needs: eligibility
+    if: github.ref == 'refs/heads/main' && needs.eligibility.outputs.publish == 'true'
     runs-on: ubuntu-24.04
     environment: merchant-feeds
     permissions:

@@ -50,6 +50,8 @@ Pour chaque accès, demandez l’URL de l’export, les identifiants en lecture 
 3. Dans **Actions**, lancez **Actualiser les offres et publier PRIX MALIN** sur `main`. Consultez les nombres d’offres valides par source dans l’étape d’import. Le déploiement ne reçoit que le dossier public généré. Sans variable de configuration, ce dossier ne contient aucune offre et la comparaison affiche « Prix indisponible ».
 4. Pour actualiser toutes les six heures, ajoutez la variable de **dépôt** `PRIX_MALIN_AUTO_REFRESH` avec la valeur `true` dans **Settings → Secrets and variables → Actions → Variables**. Activez cette cadence uniquement si elle correspond aux conditions du fournisseur. Chaque offre expire selon le délai configuré, même si une exécution est retardée. Si votre environnement requiert une approbation, les imports planifiés attendront cette approbation.
 
+Si GitHub Actions affiche « This job was skipped », ouvrez le résumé **Vérifier le déclenchement de la publication**. Un lancement manuel doit sélectionner `main`. Une exécution planifiée exige aussi que `PRIX_MALIN_AUTO_REFRESH` soit une variable **de dépôt** activée. Si la publication est autorisée mais attend une approbation d’environnement, suivez la demande GitHub. Les secrets AWIN sont lus uniquement pendant l’import. Leur absence permet une publication sans offres et le site affiche « Prix indisponible ».
+
 Pour générer le même dossier depuis un autre exécuteur, injectez les mêmes variables privées et lancez la commande suivante. Le répertoire de sortie doit être nouveau. Publiez uniquement ce dossier.
 
 ```sh
