@@ -27,6 +27,9 @@ jobs:
       - name: Récupérer les offres et générer le site
         env:
           MERCHANT_SOURCES_JSON: ${{ vars.MERCHANT_SOURCES_JSON }}
+          AWIN_FNAC_FR_FEED_URL: ${{ secrets.AWIN_FNAC_FR_FEED_URL }}
+          AWIN_FNAC_PRO_FR_FEED_URL: ${{ secrets.AWIN_FNAC_PRO_FR_FEED_URL }}
+          AWIN_SAMSUNG_PRO_FR_FEED_URL: ${{ secrets.AWIN_SAMSUNG_PRO_FR_FEED_URL }}
           FNAC_FEED_URL: ${{ secrets.FNAC_FEED_URL }}
           FNAC_API_TOKEN: ${{ secrets.FNAC_API_TOKEN }}
           DARTY_FEED_URL: ${{ secrets.DARTY_FEED_URL }}

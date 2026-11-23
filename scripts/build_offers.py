@@ -3,6 +3,7 @@ import argparse
 import csv
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, DecimalException
+import gzip
 import io
 import json
 import os
@@ -10,14 +11,17 @@ from pathlib import Path
 import shutil
 import sys
 import tempfile
+import zlib
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qsl, unquote_plus, urlencode, urlsplit, urlunsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
+from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC_FILES = ("index.html", "styles.css", "app.js", "catalog.js", "offers.js",
                 "assets/hero.webp", "assets/products.webp")
 MAX_DOWNLOAD_BYTES = 32 * 1024 * 1024
+MAX_EXPANDED_BYTES = 256 * 1024 * 1024
 MAX_CENTS = (2**53 - 1) // 2
 STOCK_STATES = {"in_stock", "out_of_stock", "preorder", "unknown"}
 
@@ -37,7 +41,7 @@ def https_url(value):
 def fetch(source):
     endpoint = os.environ[source["url_env"]]
     https_url(endpoint)
-    headers = {"Accept": "application/json, text/csv"}
+    headers = {"Accept": "application/json, text/csv, application/gzip"}
     token = os.environ[source["token_env"]] if source.get("token_env") else ""
     if token:
         header = source.get("token_header", "Authorization")
@@ -49,6 +53,11 @@ def fetch(source):
         body = response.read(MAX_DOWNLOAD_BYTES + 1)
     if len(body) > MAX_DOWNLOAD_BYTES:
         raise ValueError("Flux trop volumineux")
+    if body.startswith(b"\x1f\x8b"):
+        with gzip.GzipFile(fileobj=io.BytesIO(body)) as compressed:
+            body = compressed.read(MAX_EXPANDED_BYTES + 1)
+        if len(body) > MAX_EXPANDED_BYTES:
+            raise ValueError("Flux décompressé trop volumineux")
     return body.decode("utf-8-sig"), token
 
 
@@ -120,7 +129,14 @@ def normalize(row, source, token, now):
     try:
         observed = datetime.fromisoformat(timestamp)
         if observed.tzinfo is None:
-            return None
+            if not source.get("timestamp_timezone"):
+                return None
+            zone = ZoneInfo(source["timestamp_timezone"])
+            localized = observed.replace(tzinfo=zone)
+            if localized.utcoffset() != localized.replace(fold=1).utcoffset():
+                return None
+            observed = localized
+        observed = observed.astimezone(timezone.utc)
         expires = observed + timedelta(hours=source["valid_hours"])
     except (ValueError, OverflowError):
         return None
@@ -144,18 +160,18 @@ def normalize(row, source, token, now):
 
 
 def collect(config):
-    now = datetime.now(timezone.utc)
     offers = []
     for index, source in enumerate(config["sources"], 1):
         try:
             if source.get("amount_unit", "cents") not in {"cents", "euros"} or source["valid_hours"] <= 0:
                 raise ValueError("Configuration de normalisation invalide")
             body, token = fetch(source)
+            now = datetime.now(timezone.utc)
             rows = source_rows(body, source)
             normalized = [offer for row in rows if (offer := normalize(row, source, token, now))]
         except HTTPError as error:
             print(f"Source {index} indisponible (HTTP {error.code}).", file=sys.stderr)
-        except (URLError, OSError, ValueError, TypeError, KeyError, AttributeError, csv.Error, OverflowError):
+        except (URLError, OSError, ValueError, TypeError, KeyError, AttributeError, csv.Error, OverflowError, EOFError, zlib.error):
             print(f"Source {index} ignorée : accès, format ou configuration invalide.", file=sys.stderr)
         else:
             offers.extend(normalized)

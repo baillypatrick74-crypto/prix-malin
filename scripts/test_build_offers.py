@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import gzip
 import json
 import os
 from pathlib import Path
@@ -66,6 +67,36 @@ class ImportTests(unittest.TestCase):
         request = opener.return_value.open.call_args.args[0]
         self.assertEqual(request.full_url, endpoint)
         self.assertEqual(request.get_header("Authorization"), "Bearer fixture-token")
+
+    def test_awin_gzip_export_with_exact_reference(self):
+        example = Path(__file__).with_name("sources.awin.example.json")
+        source = json.loads(example.read_text())["sources"][0]
+        source["product_map"] = {"000-fixture-ean": "samsung-galaxy-s24-128"}
+        source["timestamp_timezone"] = "UTC"
+        date = self.now.replace(tzinfo=None).isoformat()
+        body = ("ean,currency,condition,search_price,delivery_cost,in_stock,merchant_deep_link,last_updated\n"
+                f"000-fixture-ean,EUR,new,19.99,,1,https://www.fnac.com/test?secret=fixture,{date}\n")
+        response = MagicMock()
+        response.__enter__.return_value.read.return_value = gzip.compress(body.encode())
+        with patch.dict(os.environ, {source["url_env"]: "https://feed.example.test/private"}):
+            with patch("scripts.build_offers.build_opener") as opener:
+                opener.return_value.open.return_value = response
+                result = collect({"sources": [source]})
+        offer, = result["offers"]
+        self.assertEqual(offer["priceCents"], 1999)
+        self.assertIsNone(offer["shippingCents"])
+        self.assertEqual(offer["productId"], "samsung-galaxy-s24-128")
+        self.assertEqual(offer["url"], "https://www.fnac.com/test")
+
+    def test_gzip_expansion_limit(self):
+        response = MagicMock()
+        response.__enter__.return_value.read.return_value = gzip.compress(b"12345")
+        with patch.dict(os.environ, {"FNAC_FEED_URL": "https://example.test/feed", "FNAC_API_TOKEN": "test"}):
+            with patch("scripts.build_offers.build_opener") as opener:
+                opener.return_value.open.return_value = response
+                with patch("scripts.build_offers.MAX_EXPANDED_BYTES", 4):
+                    with self.assertRaises(ValueError):
+                        fetch(self.source)
 
     def test_actions_configuration_from_environment(self):
         body = json.dumps({"offers": [self.row]})
