@@ -179,14 +179,21 @@ def build(output, data):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", type=Path, help="Fichier privé décrivant les sources")
+    config_args = parser.add_mutually_exclusive_group()
+    config_args.add_argument("--config", type=Path, help="Fichier privé décrivant les sources")
+    config_args.add_argument("--config-env", help="Variable contenant la configuration JSON des sources")
     parser.add_argument("--output", type=Path, required=True, help="Nouveau répertoire public")
     args = parser.parse_args()
     output = args.output.resolve()
     if output == ROOT or output in ROOT.parents or output.exists():
         parser.error("Choisissez un nouveau répertoire de sortie.")
     try:
-        config = json.loads(args.config.read_text(encoding="utf-8")) if args.config else {"sources": []}
+        if args.config:
+            config = json.loads(args.config.read_text(encoding="utf-8"))
+        elif args.config_env:
+            config = json.loads(os.environ.get(args.config_env) or '{"sources":[]}')
+        else:
+            config = {"sources": []}
         if not isinstance(config.get("sources"), list):
             raise ValueError("sources doit être un tableau")
     except (OSError, ValueError, AttributeError):

@@ -28,17 +28,31 @@ Le site livré affiche « Prix indisponible ». L’importeur Python 3.11+ s’e
 
 Pour chaque accès, demandez l’URL de l’export, les identifiants en lecture seule si requis, la documentation des champs, les droits de republication, la cadence et la durée de validité. Le flux doit fournir la référence exacte, le prix TTC en euros, le stock, l’horodatage du relevé et un lien d’achat public. Pour comparer le coût complet, demandez aussi les frais de livraison sur une même zone et pour un même mode de livraison.
 
-### Configurer et publier
+### Configurer un flux
 
 1. Copiez `scripts/sources.example.json` dans un fichier privé, par exemple `sources.local.json`. L’exemple illustre la configuration et ses champs, dont les noms doivent être adaptés au contrat. Ajoutez une entrée `sources` par marchand. Dans `product_map`, associez chaque GTIN/EAN ou référence fabricant exacte à l’identifiant de variante de `catalog.js`. Vérifiez la capacité, l’état neuf et le périmètre de livraison avant d’associer une offre.
-2. Placez les URL privées et les clés dans le coffre de l’exécuteur. Avec GitHub Actions, utilisez les secrets d’un environnement protégé et injectez-les uniquement dans l’étape d’import qui tourne depuis une branche de confiance. `url_env` et `token_env` désignent les noms des variables, par exemple `FNAC_FEED_URL` et `FNAC_API_TOKEN`. Sans clé, omettez `token_env`. Par défaut, la clé passe dans `Authorization: Bearer …`. `token_header` et `token_prefix` permettent un autre en-tête documenté.
-3. Lancez la commande depuis la racine du dépôt. Le répertoire de sortie doit être nouveau.
+2. Placez les URL privées et les clés dans le coffre de l’exécuteur. `url_env` et `token_env` désignent les noms des variables. Sans clé, omettez `token_env`. Par défaut, la clé passe dans `Authorization: Bearer …`. `token_header` et `token_prefix` permettent un autre en-tête documenté.
 
-   ```sh
-   python3 scripts/build_offers.py --config sources.local.json --output dist
-   ```
+### Activer l’actualisation sur GitHub Pages
 
-4. Publiez **uniquement `dist/`** dans GitHub Pages. Si vous utilisez GitHub Actions pour Pages, choisissez **GitHub Actions** dans les paramètres Pages et téléversez uniquement ce répertoire comme artefact Pages. Prévoyez des reconstructions selon les conditions des flux. Le dépôt ne déclenche aucun déploiement automatique. Lancez la commande sans `--config` pour construire le site sans offres.
+1. Après fusion, choisissez **GitHub Actions** dans **Settings → Pages → Build and deployment**. Dans **Settings → Environments**, créez `merchant-feeds` et limitez ses branches de déploiement à `main`.
+2. Dans cet environnement, ajoutez la variable `MERCHANT_SOURCES_JSON` contenant la configuration de vos seuls flux autorisés. Déclarez-y la correspondance entre les références des offres et les variantes du catalogue. Les URL et jetons doivent être enregistrés dans **Environment secrets** sous les noms ci-dessous.
+
+   | Marchand | Secret d’URL | Secret du jeton si requis |
+   | --- | --- | --- |
+   | Fnac | `FNAC_FEED_URL` | `FNAC_API_TOKEN` |
+   | Darty | `DARTY_FEED_URL` | `DARTY_API_TOKEN` |
+   | Boulanger | `BOULANGER_FEED_URL` | `BOULANGER_API_TOKEN` |
+   | Cdiscount | `CDISCOUNT_FEED_URL` | `CDISCOUNT_API_TOKEN` |
+
+3. Dans **Actions**, lancez **Actualiser les offres et publier PRIX MALIN** sur `main`. Consultez les nombres d’offres valides par source dans l’étape d’import. Le déploiement ne reçoit que le dossier public généré. Sans variable de configuration, ce dossier ne contient aucune offre et la comparaison affiche « Prix indisponible ».
+4. Pour actualiser toutes les six heures, ajoutez la variable de **dépôt** `PRIX_MALIN_AUTO_REFRESH` avec la valeur `true` dans **Settings → Secrets and variables → Actions → Variables**. Activez cette cadence uniquement si elle correspond aux conditions du fournisseur. Chaque offre expire selon le délai configuré, même si une exécution est retardée. Si votre environnement requiert une approbation, les imports planifiés attendront cette approbation.
+
+Pour générer le même dossier depuis un autre exécuteur, injectez les mêmes variables privées et lancez la commande suivante. Le répertoire de sortie doit être nouveau. Publiez uniquement ce dossier.
+
+```sh
+python3 scripts/build_offers.py --config sources.local.json --output dist
+```
 
 Le JSON peut être un tableau à la racine ou sous `rows_path`. Le CSV utilise une ligne d’en-têtes et un séparateur configurable avec `delimiter`. Les chemins de champs JSON peuvent être imbriqués avec des points. `amount_unit` vaut `cents` ou `euros`. `new_value`, `eur_value` et `stock_values` traduisent les valeurs du flux. `valid_hours` fixe la durée de validité depuis l’horodatage du relevé, selon la limite autorisée par le fournisseur.
 
