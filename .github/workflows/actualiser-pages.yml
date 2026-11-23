@@ -1,0 +1,56 @@
+name: Actualiser les offres et publier PRIX MALIN
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */6 * * *'
+
+permissions: {}
+
+concurrency:
+  group: prix-malin-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || vars.PRIX_MALIN_AUTO_REFRESH == 'true')
+    runs-on: ubuntu-24.04
+    environment: merchant-feeds
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Vérifier l’importeur
+        run: python3 -m unittest scripts.test_build_offers
+      - name: Récupérer les offres et générer le site
+        env:
+          MERCHANT_SOURCES_JSON: ${{ vars.MERCHANT_SOURCES_JSON }}
+          FNAC_FEED_URL: ${{ secrets.FNAC_FEED_URL }}
+          FNAC_API_TOKEN: ${{ secrets.FNAC_API_TOKEN }}
+          DARTY_FEED_URL: ${{ secrets.DARTY_FEED_URL }}
+          DARTY_API_TOKEN: ${{ secrets.DARTY_API_TOKEN }}
+          BOULANGER_FEED_URL: ${{ secrets.BOULANGER_FEED_URL }}
+          BOULANGER_API_TOKEN: ${{ secrets.BOULANGER_API_TOKEN }}
+          CDISCOUNT_FEED_URL: ${{ secrets.CDISCOUNT_FEED_URL }}
+          CDISCOUNT_API_TOKEN: ${{ secrets.CDISCOUNT_API_TOKEN }}
+        run: python3 scripts/build_offers.py --config-env MERCHANT_SOURCES_JSON --output "$RUNNER_TEMP/prix-malin-public"
+      - name: Préparer le dossier public
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ runner.temp }}/prix-malin-public
+
+  deploy:
+    runs-on: ubuntu-24.04
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Déployer sur GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

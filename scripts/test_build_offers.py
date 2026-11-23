@@ -1,12 +1,14 @@
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
 from urllib.error import URLError
+from unittest.mock import MagicMock
 
-from scripts.build_offers import build, collect, normalize, source_rows
+from scripts.build_offers import NoRedirects, build, collect, fetch, main, normalize, source_rows
 
 
 class ImportTests(unittest.TestCase):
@@ -49,6 +51,33 @@ class ImportTests(unittest.TestCase):
         with patch("scripts.build_offers.fetch", side_effect=[URLError("private URL"), (body, "")]):
             result = collect({"sources": [self.source, self.source]})
         self.assertEqual(len(result["offers"]), 1)
+
+    def test_fetch_uses_private_header_and_blocks_redirects(self):
+        endpoint = "https://partner.example.test/offers"
+        stream = MagicMock()
+        stream.__enter__.return_value.read.return_value = b'{"offers":[]}'
+        with patch.dict(os.environ, {"FNAC_FEED_URL": endpoint, "FNAC_API_TOKEN": "fixture-token"}):
+            with patch("scripts.build_offers.build_opener") as opener:
+                opener.return_value.open.return_value = stream
+                payload, _ = fetch(self.source)
+
+        self.assertEqual(json.loads(payload), {"offers": []})
+        self.assertIsInstance(opener.call_args.args[0], NoRedirects)
+        request = opener.return_value.open.call_args.args[0]
+        self.assertEqual(request.full_url, endpoint)
+        self.assertEqual(request.get_header("Authorization"), "Bearer fixture-token")
+
+    def test_actions_configuration_from_environment(self):
+        body = json.dumps({"offers": [self.row]})
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "public"
+            argv = ["build_offers.py", "--config-env", "MERCHANT_SOURCES_JSON", "--output", str(output)]
+            config = json.dumps({"sources": [self.source]})
+            with patch.dict(os.environ, {"MERCHANT_SOURCES_JSON": config}):
+                with patch("sys.argv", argv), patch("scripts.build_offers.fetch", return_value=(body, "token")):
+                    main()
+            offers = json.loads((output / "offers.json").read_text())["offers"]
+            self.assertEqual([offer["merchant"] for offer in offers], ["Fnac"])
 
     def test_build_contains_only_public_files(self):
         with tempfile.TemporaryDirectory() as directory:
