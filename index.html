@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Comparez les offres high-tech dans le catalogue de démonstration de PRIX MALIN.">
+  <meta name="description" content="Recherchez un produit high-tech par marque et modèle et comparez les offres marchandes disponibles.">
   <title>PRIX MALIN — Comparateur high-tech</title>
   <link rel="stylesheet" href="styles.css">
   <script type="module" src="app.js"></script>
@@ -12,7 +12,7 @@
   <header class="top">
     <div class="wrap bar">
       <a class="brand" href="./" aria-label="PRIX MALIN, accueil"><span class="brand-mark" aria-hidden="true">ϟ</span> PRIX <strong>MALIN</strong></a>
-      <span class="top-mode"><i></i> Mode démonstration</span>
+      <span class="top-mode" id="source-status">Prix indisponible</span>
     </div>
   </header>
   <main class="wrap">
@@ -23,14 +23,14 @@
         <p class="intro">Smartphones, PC et accessoires. Comparez les offres high-tech en un coup d’œil.</p>
         <form id="search-form" class="search" role="search">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
-          <input id="search" type="search" aria-label="Rechercher un produit" placeholder="Ex. smartphone, PC portable…" autocomplete="off">
+          <input id="search" type="search" aria-label="Rechercher par marque ou modèle" placeholder="Ex. Samsung Galaxy S24" autocomplete="off">
           <button type="submit">Rechercher</button>
         </form>
       </div>
       <div class="hero-art" aria-hidden="true"></div>
     </section>
 
-    <aside class="notice"><span aria-hidden="true">ⓘ</span><p><strong>Catalogue de démonstration</strong> — Les produits, marchands et prix affichés sont fictifs. Aucune source de prix réelle n’est connectée.</p></aside>
+    <aside class="notice"><span aria-hidden="true">ⓘ</span><p><strong>Prix marchands</strong> — <span id="source-note">Aucune offre récente issue d’une source autorisée n’est disponible actuellement.</span></p></aside>
 
     <section class="catalog" id="catalog" aria-labelledby="catalog-title">
       <div class="section-title"><h2 id="catalog-title" tabindex="-1">Explorer les produits</h2><p id="count" role="status"></p></div>
@@ -50,14 +50,14 @@
       <noscript>Activez JavaScript pour rechercher des produits et comparer les offres.</noscript>
     </section>
   </main>
-  <footer><div class="wrap bar"><span class="brand">PRIX <strong>MALIN</strong></span><span>Comparateur high-tech · Données de démonstration</span></div></footer>
+  <footer><div class="wrap bar"><span class="brand">PRIX <strong>MALIN</strong></span><span>Comparateur high-tech</span></div></footer>
 
   <dialog id="comparison" aria-labelledby="comparison-title" aria-describedby="comparison-note">
     <div class="dialog-head">
       <div><p class="eyebrow">COMPARAISON DES OFFRES</p><h2 id="comparison-title"></h2></div>
       <button id="close" type="button" class="close" aria-label="Fermer la comparaison" autofocus>×</button>
     </div>
-    <p id="comparison-note">Offres et prix fictifs, triés par total croissant, livraison incluse.</p>
+    <p id="comparison-note">Les offres en stock sont présentées en premier, avec les totaux livraison incluse lorsqu’ils sont connus.</p>
     <div id="offers"></div>
   </dialog>
 
@@ -68,7 +68,7 @@
         <p class="category"></p>
         <h3></h3>
         <p class="specs"></p>
-        <div class="price"><span>Prix démo · livraison incluse</span><strong></strong></div>
+        <div class="price"><span>Offres marchandes</span><strong></strong></div>
         <button class="compare" type="button"><span></span><span aria-hidden="true">→</span></button>
       </div>
     </article>
