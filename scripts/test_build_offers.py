@@ -6,7 +6,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 from unittest.mock import MagicMock
 
 from scripts.build_offers import NoRedirects, build, collect, fetch, main, normalize, source_rows
@@ -109,6 +109,25 @@ class ImportTests(unittest.TestCase):
                     main()
             offers = json.loads((output / "offers.json").read_text())["offers"]
             self.assertEqual([offer["merchant"] for offer in offers], ["Fnac"])
+
+    def test_awin_diagnostics_do_not_disclose_private_urls(self):
+        example = Path(__file__).with_name("sources.awin.example.json")
+        fnac, fnac_pro, samsung = json.loads(example.read_text())["sources"]
+        reports = []
+        with patch.dict(os.environ, {fnac["url_env"]: ""}):
+            result = collect({"sources": [fnac]}, reports)
+        self.assertEqual(result["offers"], [])
+        self.assertIsNotNone(datetime.fromisoformat(result["refreshedAt"]).tzinfo)
+        self.assertIn("AWIN FNAC FR : URL du flux absente.", reports)
+        self.assertTrue(any(line.startswith("AWIN FNAC PRO FR : aucune source déclarée") for line in reports))
+
+        reports.clear()
+        denied = HTTPError("https://example.test/private-key", 403, "private-key", {}, None)
+        with patch("scripts.build_offers.fetch", side_effect=[denied, ("", "")]):
+            updated = collect({"sources": [fnac_pro, samsung]}, reports)
+        self.assertEqual(updated["offers"], [])
+        self.assertIn("AWIN FNAC PRO FR : Flux inaccessible (HTTP 403).", reports)
+        self.assertNotIn("private-key", "\n".join(reports))
 
     def test_build_contains_only_public_files(self):
         with tempfile.TemporaryDirectory() as directory:

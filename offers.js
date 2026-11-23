@@ -61,8 +61,16 @@ export async function loadOffers() {
       cache: 'no-store',
       signal: AbortSignal.timeout(5000),
     });
-    return response.ok ? readOffers(await response.json()) : [];
+    if (!response.ok) return null;
+    const feed = await response.json();
+    if (feed?.version !== 1 || !Array.isArray(feed.offers)) return null;
+    const now = Date.now();
+    const refreshedAt = Date.parse(feed.refreshedAt);
+    return {
+      offers: readOffers(feed, now),
+      refreshedAt: Number.isFinite(refreshedAt) && refreshedAt <= now ? refreshedAt : null,
+    };
   } catch {
-    return [];
+    return null;
   }
 }
