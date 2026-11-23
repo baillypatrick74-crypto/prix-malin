@@ -95,9 +95,18 @@ function render() {
     card.querySelector('.specs').textContent = product.specs;
     const ranked = rankOffers(offers, product.id);
     const best = ranked.find(offer => offer.availability === 'in_stock' && offer.total !== null);
-    card.querySelector('.price span').textContent = best ? 'Dès · livraison incluse' : 'Offres marchandes';
+    card.querySelector('.price span').textContent = best ? 'Meilleur total · livraison incluse' : 'Offres marchandes';
     card.querySelector('.price strong').textContent = best ? money(best.total)
       : ranked.length ? 'Voir les prix' : unavailable;
+    if (best) {
+      const merchant = card.querySelector('.best-merchant');
+      merchant.textContent = best.merchant;
+      merchant.hidden = false;
+      const link = card.querySelector('.best-link');
+      link.href = best.url;
+      link.setAttribute('aria-label', `Voir l’offre pour ${product.brand} ${product.model} chez ${best.merchant}`);
+      link.hidden = false;
+    }
     const button = card.querySelector('.compare');
     const label = 'Comparer les offres';
     button.firstElementChild.textContent = label;

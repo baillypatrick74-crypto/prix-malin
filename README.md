@@ -2,6 +2,8 @@
 
 Comparateur high-tech en français, utilisable sur smartphone et ordinateur. Recherchez une marque ou un modèle, par exemple Samsung Galaxy S24, Apple iPhone 16 ou Xiaomi Redmi Note 14 5G. Le catalogue est une sélection de références et de variantes, définie dans `catalog.js`.
 
+La fiche produit met en avant le total TTC le plus bas parmi les offres en stock dont la livraison est connue. Elle indique le marchand et donne accès à son offre. Les offres dont la livraison ou le stock est inconnu restent consultables dans le comparatif.
+
 ## Lancer le site
 
 Depuis la racine du dépôt, avec Python 3 :
