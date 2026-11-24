@@ -101,3 +101,21 @@ Créez une alerte depuis l’une des huit fiches et entrez un prix maximum en eu
 Le seuil reste dans le stockage local du navigateur. Le site recharge le flux à l’ouverture, au retour sur l’onglet et toutes les cinq minutes tant que l’onglet est visible. Une offre expirée cesse de déclencher l’alerte. Si le total baisse entre deux relevés pendant la même session et atteint le seuil, la notification signale la baisse. Le site ne vérifie les alertes que lorsqu’il est ouvert.
 
 Pour une évolution vers l’e-mail, la règle de comparaison est isolée dans `matchingPriceAlerts`. Un futur service côté serveur devra gérer le consentement, la vérification des adresses, le désabonnement et la déduplication des envois. La version actuelle ne collecte aucune adresse et n’envoie aucun e-mail.
+
+## Aperçu privé du catalogue AWIN
+
+Pour tester le catalogue fourni, copier son JSON normalisé dans
+`awin/catalog.json` et les photos référencées dans `awin/awin-images/`,
+depuis l’archive de test validée. Le dossier `awin/` est ignoré par Git et
+exclu de la construction GitHub Pages. Lancer `python -m http.server 3000`,
+puis ouvrir `http://localhost:3000/`. Le filtre **Catalogue AWIN** apparaît
+lorsqu’au moins une offre valide est disponible. Les offres sont masquées
+24 heures après l’import pour éviter d’afficher un prix ancien.
+
+Avant la diffusion, vérifier dans le compte AWIN les conditions du programme
+BlazeVideo FR (66486), l’autorisation de l’espace promotionnel de comparaison
+et la diffusion des données et des copies d’images. Vérifier aussi que
+l’usage affilié est compatible avec les limites de GitHub Pages.
+Le code lit uniquement le catalogue normalisé et des photos locales.
+[Aide AWIN sur les images](https://success.awin.com/s/article/Can-I-use-any-images-from-the-advertiser-s-website?language=en_US) ·
+[Limites de GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits)

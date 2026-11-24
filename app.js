@@ -1,3 +1,4 @@
+import { awinCategory, loadAwinCatalog } from './awin.js';
 import { searchProducts } from './catalog.js';
 import { availability, bestComparableOffer, loadOffers, merchants, rankOffers } from './offers.js';
 import { setupPriceAlerts } from './price-alerts.js';
@@ -19,8 +20,21 @@ const offerList = document.querySelector('#offers');
 let category = '';
 
 let offers = [];
+let regularOffers = [];
+let awinOffers = [];
+let awinProducts = [];
+const awinFilter = document.querySelector('#awin-filter');
 let refreshedAt = null;
 let selectedProduct = null;
+const productName = product => [product.brand, product.model].filter(Boolean).join(' ');
+
+function setOfferLink(link, offer) {
+  link.href = offer.url;
+  if (offer.affiliate) {
+    link.rel = 'sponsored';
+    link.textContent = 'Voir l’offre (lien affilié)';
+  }
+}
 
 function offerRow(merchant, offer) {
   const row = document.createElement('div');
@@ -42,7 +56,7 @@ function offerRow(merchant, offer) {
   const stock = document.createElement('small');
   stock.textContent = availability.get(offer.availability);
   const source = document.createElement('small');
-  source.textContent = `${offer.source} · Relevé le ${date.format(offer.observed)} (Paris)`;
+  source.textContent = `${offer.source} · ${offer.affiliate ? 'Importé le' : 'Relevé le'} ${date.format(offer.observed)} (Paris)`;
   details.append(stock, source);
 
   const actions = document.createElement('div');
@@ -50,8 +64,8 @@ function offerRow(merchant, offer) {
   const total = document.createElement('strong');
   total.textContent = offer.total === null ? 'Total indisponible' : `Total : ${money(offer.total)}`;
   const link = document.createElement('a');
-  link.href = offer.url;
   link.textContent = 'Voir l’offre';
+  setOfferLink(link, offer);
   link.setAttribute('aria-label', `Voir l’offre chez ${merchant}`);
   actions.append(total, link);
   row.append(details, actions);
@@ -59,9 +73,9 @@ function offerRow(merchant, offer) {
 }
 
 function renderComparison(product) {
-  document.querySelector('#comparison-title').textContent = `${product.brand} ${product.model}`;
+  document.querySelector('#comparison-title').textContent = productName(product);
   const ranked = rankOffers(offers, product.id);
-  const missing = merchants.filter(merchant => !ranked.some(offer => offer.merchant === merchant));
+  const missing = product.category === awinCategory ? [] : merchants.filter(merchant => !ranked.some(offer => offer.merchant === merchant));
   offerList.replaceChildren(
     ...ranked.map(offer => offerRow(offer.merchant, offer)),
     ...missing.map(merchant => offerRow(merchant)),
@@ -76,14 +90,20 @@ function showComparison(product) {
 
 function render() {
   const now = Date.now();
-  const matches = searchProducts(search.value, category).map(product => {
+  const activeIds = new Set(awinOffers.filter(offer => offer.expires > now).map(offer => offer.productId));
+  const activeProducts = awinProducts.filter(product => activeIds.has(product.id));
+  awinFilter.hidden = activeProducts.length === 0;
+  if (awinFilter.hidden && category === awinCategory) category = '';
+  const matches = searchProducts(search.value, category, activeProducts).map(product => {
     const ranked = rankOffers(offers, product.id, now);
     const best = bestComparableOffer(ranked);
-    return { product, ranked, best };
+    const headline = best ?? (product.category === awinCategory
+      ? ranked.find(offer => offer.availability === 'in_stock') : null);
+    return { product, ranked, best, headline };
   }).sort((first, second) => {
-    const firstTotal = first.best?.total ?? Number.MAX_SAFE_INTEGER;
-    const secondTotal = second.best?.total ?? Number.MAX_SAFE_INTEGER;
-    return firstTotal - secondTotal;
+    const firstTotal = first.headline?.total ?? first.headline?.price ?? Infinity;
+    const secondTotal = second.headline?.total ?? second.headline?.price ?? Infinity;
+    return firstTotal === secondTotal ? 0 : firstTotal - secondTotal;
   });
   const hasOffers = offers.some(offer => offer.expires > now);
   const refreshDate = document.querySelector('#offers-refreshed-at');
@@ -104,31 +124,40 @@ function render() {
   catalog.replaceChildren();
   empty.hidden = matches.length !== 0;
   count.textContent = `${matches.length} produit${matches.length === 1 ? '' : 's'}`;
-  for (const { product, ranked, best } of matches) {
+  for (const { product, ranked, best, headline } of matches) {
     const card = template.content.cloneNode(true);
     const picture = card.querySelector('.product-image');
     picture.classList.add(product.image);
+    if (product.photo) {
+      const img = document.createElement('img');
+      img.src = product.photo;
+      img.alt = '';
+      img.loading = 'lazy';
+      picture.append(img);
+    }
     card.querySelector('.category').textContent = product.category;
-    card.querySelector('h3').textContent = `${product.brand} ${product.model}`;
+    card.querySelector('h3').textContent = productName(product);
     card.querySelector('.specs').textContent = product.specs;
-    card.querySelector('.price span').textContent = best ? 'Meilleur total · livraison incluse' : 'Offres marchandes';
-    card.querySelector('.price strong').textContent = best ? money(best.total)
+    card.querySelector('.price span').textContent = best ? 'Meilleur total · livraison incluse' : headline ? 'Prix de l’article · livraison inconnue' : 'Offres marchandes';
+    card.querySelector('.price strong').textContent = headline ? money(headline.total ?? headline.price)
       : ranked.length ? 'Voir les prix' : unavailable;
-    if (best) {
+    if (headline) {
       const merchant = card.querySelector('.best-merchant');
-      merchant.textContent = best.merchant;
+      merchant.textContent = headline.merchant;
       merchant.hidden = false;
       const link = card.querySelector('.best-link');
-      link.href = best.url;
-      link.setAttribute('aria-label', `Voir l’offre pour ${product.brand} ${product.model} chez ${best.merchant}`);
+      setOfferLink(link, headline);
+      link.setAttribute('aria-label', `Voir l’offre pour ${productName(product)} chez ${headline.merchant}`);
       link.hidden = false;
     }
     const button = card.querySelector('.compare');
     const label = 'Comparer les offres';
     button.firstElementChild.textContent = label;
-    button.setAttribute('aria-label', `${label} pour ${product.brand} ${product.model}`);
+    button.setAttribute('aria-label', `${label} pour ${productName(product)}`);
     button.addEventListener('click', () => showComparison(product));
-    priceAlerts.bindButton(card.querySelector('.alert-button'), product);
+    const alertButton = card.querySelector('.alert-button');
+    if (product.category === awinCategory) alertButton.hidden = true;
+    else priceAlerts.bindButton(alertButton, product);
     catalog.append(card);
   }
 }
@@ -150,6 +179,13 @@ document.querySelector('#reset').addEventListener('click', () => {
   category = '';
   render();
   document.querySelector('#catalog-title').focus();
+});
+document.querySelector('#home').addEventListener('click', () => {
+  search.value = '';
+  category = '';
+  render();
+  search.focus();
+  window.scrollTo(0, 0);
 });
 document.querySelector('#close').addEventListener('click', () => comparison.close());
 render();
@@ -173,10 +209,21 @@ async function refreshPrices() {
   if (refreshing) return;
   refreshing = true;
   try {
-    const loaded = await loadOffers();
-    if (loaded && (loaded.refreshedAt !== refreshedAt || JSON.stringify(loaded.offers) !== JSON.stringify(offers))) {
-      offers = loaded.offers;
+    const [loaded, awin] = await Promise.all([loadOffers(), loadAwinCatalog()]);
+    const nextRefreshedAt = loaded ? loaded.refreshedAt : refreshedAt;
+    const productsChanged = awin && JSON.stringify(awin.products) !== JSON.stringify(awinProducts);
+    const refreshChanged = nextRefreshedAt !== refreshedAt;
+    if (loaded) {
+      regularOffers = loaded.offers;
       refreshedAt = loaded.refreshedAt;
+    }
+    if (awin) {
+      awinOffers = awin.offers;
+      awinProducts = awin.products;
+    }
+    const nextOffers = [...regularOffers, ...awinOffers];
+    if (refreshChanged || productsChanged || JSON.stringify(nextOffers) !== JSON.stringify(offers)) {
+      offers = nextOffers;
       updatePrices();
     }
   } finally {
