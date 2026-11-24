@@ -1,3 +1,5 @@
 /dist/
 /sources.local.json
 __pycache__/
+/awin/
+*.csv.gz

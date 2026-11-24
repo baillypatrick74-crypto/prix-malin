@@ -18,7 +18,7 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parents[1]
-PUBLIC_FILES = ("index.html", "styles.css", "app.js", "catalog.js", "offers.js", "price-alerts.js",
+PUBLIC_FILES = ("index.html", "styles.css", "app.js", "catalog.js", "offers.js", "price-alerts.js", "awin.js",
                 "assets/hero.webp", "assets/products.webp")
 MAX_DOWNLOAD_BYTES = 32 * 1024 * 1024
 MAX_EXPANDED_BYTES = 256 * 1024 * 1024

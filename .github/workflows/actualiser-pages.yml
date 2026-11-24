@@ -50,7 +50,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Vérifier l’importeur
-        run: python3 -m unittest scripts.test_build_offers
+        run: python3 -m unittest scripts.test_build_offers scripts.test_import_awin
       - name: Récupérer les offres et générer le site
         env:
           MERCHANT_SOURCES_JSON: ${{ vars.MERCHANT_SOURCES_JSON }}
@@ -66,6 +66,11 @@ jobs:
           CDISCOUNT_FEED_URL: ${{ secrets.CDISCOUNT_FEED_URL }}
           CDISCOUNT_API_TOKEN: ${{ secrets.CDISCOUNT_API_TOKEN }}
         run: python3 scripts/build_offers.py --config-env MERCHANT_SOURCES_JSON --output "$RUNNER_TEMP/prix-malin-public"
+      - name: Actualiser le catalogue BlazeVideo FR après autorisation
+        if: vars.PRIX_MALIN_BLAZEVIDEO_PUBLISH == 'true'
+        env:
+          AWIN_BLAZEVIDEO_FR_FEED_URL: ${{ secrets.AWIN_BLAZEVIDEO_FR_FEED_URL }}
+        run: python3 scripts/import_awin.py --download --mirror-images --output "$RUNNER_TEMP/prix-malin-public/awin/catalog.json"
       - name: Préparer le dossier public
         uses: actions/upload-pages-artifact@v3
         with:

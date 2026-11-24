@@ -13,9 +13,9 @@ const normalize = value => value.normalize('NFD').replace(/\p{M}/gu, '').toLower
 
 const compact = value => normalize(value).replace(/[^\p{L}\p{N}]+/gu, '');
 
-export function searchProducts(query, category) {
+export function searchProducts(query, category, additional = []) {
   const terms = normalize(query).split(/[^\p{L}\p{N}]+/u).filter(Boolean);
-  return products.filter(product => {
+  return [...products, ...additional].filter(product => {
     const categoryAlias = product.category === 'PC portables' ? 'ordinateur' : '';
     const searchable = normalize(`${product.brand} ${product.model} ${product.category} ${product.specs} ${categoryAlias}`);
     const model = compact(product.model);
