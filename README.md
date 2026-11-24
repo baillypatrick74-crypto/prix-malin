@@ -102,20 +102,41 @@ Le seuil reste dans le stockage local du navigateur. Le site recharge le flux à
 
 Pour une évolution vers l’e-mail, la règle de comparaison est isolée dans `matchingPriceAlerts`. Un futur service côté serveur devra gérer le consentement, la vérification des adresses, le désabonnement et la déduplication des envois. La version actuelle ne collecte aucune adresse et n’envoie aucun e-mail.
 
-## Aperçu privé du catalogue AWIN
+## Catalogue BlazeVideo FR
 
-Pour tester le catalogue fourni, copier son JSON normalisé dans
-`awin/catalog.json` et les photos référencées dans `awin/awin-images/`,
-depuis l’archive de test validée. Le dossier `awin/` est ignoré par Git et
-exclu de la construction GitHub Pages. Lancer `python -m http.server 3000`,
-puis ouvrir `http://localhost:3000/`. Le filtre **Catalogue AWIN** apparaît
-lorsqu’au moins une offre valide est disponible. Les offres sont masquées
-24 heures après l’import pour éviter d’afficher un prix ancien.
+Pour tester en privé un export récent du flux AWIN 89534 (annonceur 66486),
+lancer depuis la racine du projet :
 
-Avant la diffusion, vérifier dans le compte AWIN les conditions du programme
-BlazeVideo FR (66486), l’autorisation de l’espace promotionnel de comparaison
-et la diffusion des données et des copies d’images. Vérifier aussi que
-l’usage affilié est compatible avec les limites de GitHub Pages.
-Le code lit uniquement le catalogue normalisé et des photos locales.
+```sh
+python -m scripts.import_awin --file /chemin/vers/export.csv.gz --mirror-images
+python -m http.server 3000 --bind 127.0.0.1
+```
+
+Ouvrir `http://localhost:3000/` puis choisir **Catalogue AWIN**. L’identifiant
+produit AWIN conserve les variantes sans EAN. Les prix et stocks proviennent
+du CSV. Les offres sont masquées 24 heures après l’import. Le dossier `awin/`
+est ignoré par Git, ainsi que les exports CSV.GZ.
+
+AWIN autorise en général l’usage des visuels fournis sur sa plateforme pour
+les éditeurs acceptés au programme. L’import privilégie l’image AWIN
+`aw_image_url` et copie les photos par HTTPS avec vérification TLS.
+Vérifier les conditions BlazeVideo FR pour le domaine du comparateur,
+la mise à disposition du JSON dérivé et l’hébergement des copies de photos.
+GitHub Pages exclut les sites principalement destinés à faciliter des
+transactions commerciales. L’acceptation du partenariat ne suffit pas à
+confirmer l’admissibilité du comparateur affilié sur cet hébergement.
 [Aide AWIN sur les images](https://success.awin.com/s/article/Can-I-use-any-images-from-the-advertiser-s-website?language=en_US) ·
 [Limites de GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits)
+
+### Actualisation quotidienne après validation
+
+Le workflow existant peut importer le catalogue lors de son exécution
+quotidienne à 05 h 17 UTC, après validation de la diffusion et de l’hébergement.
+L’activation requiert `PRIX_MALIN_AUTO_REFRESH=true` pour la planification et
+`PRIX_MALIN_BLAZEVIDEO_PUBLISH=true` pour inclure BlazeVideo FR.
+Placer l’URL complète de téléchargement du flux dans le secret
+`AWIN_BLAZEVIDEO_FR_FEED_URL` de l’environnement Actions `merchant-feeds`.
+L’URL et la clé restent côté serveur. Le workflow publie uniquement les
+données normalisées et les photos locales. Un échec de l’import bloque le
+déploiement de la nouvelle version. Tant que BlazeVideo FR est désactivé,
+le catalogue privé ne fait pas partie de l’artefact Pages.

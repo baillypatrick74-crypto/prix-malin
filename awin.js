@@ -16,17 +16,20 @@ export async function loadAwinCatalog() {
     const products = new Map();
     const entries = [];
     for (const row of rows) {
-      if (row?.affiliate !== true || typeof row.gtin !== 'string'
-          || !/^(?:\d{8}|\d{12,14})$/.test(row.gtin)
-          || typeof row.title !== 'string' || !row.title.trim()) continue;
-      const productId = `awin-${row.gtin.padStart(14, '0')}`;
+      if (row?.affiliate !== true || typeof row.title !== 'string' || !row.title.trim()) continue;
+      const gtin = typeof row.gtin === 'string' && /^(?:\d{8}|\d{12,14})$/.test(row.gtin)
+        ? row.gtin : null;
+      const awinId = typeof row.awinId === 'string' && /^[0-9]{1,24}$/.test(row.awinId)
+        ? row.awinId : null;
+      if (!awinId && !gtin) continue;
+      const productId = awinId ? `awin-product-${awinId}` : `awin-${gtin.padStart(14, '0')}`;
       const observed = Date.parse(row.checkedAt);
       if (!Number.isFinite(observed)) continue;
       const photo = /^\.\/awin-images\/[a-f0-9]{64}\.(?:png|jpg)$/.test(row.imageUrl)
         ? new URL(`./awin/${row.imageUrl.slice(2)}`, import.meta.url).href : null;
       products.set(productId, {
         id: productId, brand: '', model: row.title.trim(), category: awinCategory,
-        specs: `EAN ${row.gtin}`, image: 'awin', photo,
+        specs: gtin ? `EAN ${gtin}` : '', image: 'awin', photo,
       });
       entries.push({
         productId, merchant: row.seller, source: 'AWIN', currency: row.currency,
